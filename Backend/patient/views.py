@@ -11,10 +11,12 @@ from patient.ocr import perform_ocr
 from werkzeug.datastructures import FileStorage
 
 from extensions import CustomParser
+from langchain_pinecone import PineconeVectorStore
+
+from vectorstore import index, embeddings, index_name
 
 from . import ns
 from .serializer import patient_otp_model
-
 
 @dataclass()
 class UserData:
@@ -54,7 +56,6 @@ class GenerateOTPRoute(Resource):
 
         return {"otp": otp, "access_token": create_access_token(email)}
 
-
 @ns.route("/upload")
 class UploadRoute(Resource):
     _upload_parser = CustomParser()
@@ -63,6 +64,7 @@ class UploadRoute(Resource):
     @ns.expect(_upload_parser)
     @jwt_required()
     def post(self):
+
         email = get_jwt_identity()
         args = self._upload_parser.parse_args(strict=True)
         file: FileStorage = args.get("file")
@@ -77,6 +79,15 @@ class UploadRoute(Resource):
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         all_splits = text_splitter.split_text(text)
 
-        data_mapping[email].files.add_texts(all_splits)
+        patient_id = email.split("@")[0].replace(".", "")
+
+
+        PineconeVectorStore.from_texts(
+            texts=all_splits,
+            embedding=embeddings,
+            index_name=index_name,
+            namespace=patient_id
+        )
 
         return "Done uploading file"
+

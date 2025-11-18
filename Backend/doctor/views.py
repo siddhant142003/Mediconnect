@@ -10,6 +10,9 @@ from doctor.serializer import patient_details_model
 from patient.views import data_mapping, otp_mapping
 
 from . import ns
+from langchain_pinecone import PineconeVectorStore
+
+from vectorstore import index, embeddings, index_name
 
 llm = init_chat_model("llama-3.1-8b-instant", model_provider="groq")
 prompt = hub.pull("rlm/rag-prompt")
@@ -19,7 +22,6 @@ class State(TypedDict):
     question: str
     context: List[str]
     answer: str
-
 
 @ns.route("/ask")
 class AskRoute(Resource):
@@ -33,10 +35,17 @@ class AskRoute(Resource):
         args = self._ask_parser.parse_args(strict=True)
         question = args.get("question")
 
-        store = data_mapping[email].files
+        patient_id = email.split("@")[0].replace(".", "")
+
+
+        store = PineconeVectorStore(
+            index=index,
+            embedding=embeddings,
+            namespace=patient_id
+        )
 
         def retrieve(state: State):
-            retrieved_docs = store.similarity_search(state["question"])
+            retrieved_docs = store.similarity_search(state["question"], k=5)
             return {"context": retrieved_docs}
 
         def generate(state: State):
