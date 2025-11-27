@@ -4,10 +4,10 @@ from pinecone import Pinecone, ServerlessSpec
 from flask_restx import Resource
 from langchain_pinecone import PineconeVectorStore
 from vectorstore import index, embeddings, index_name
-# oye, This below line is added for (user prompt + system prompt) style
+# This below line is added for (user prompt + system prompt) style
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain.chat_models import init_chat_model
-# oye, StateGraph is the engine that builds our RAG workflow, Nodes (functions like retrieve, generate)Edges (which function runs next)
+# StateGraph is the engine that builds our RAG workflow, Nodes (functions like retrieve, generate)Edges (which function runs next)
 # How, state moves between them
 from langgraph.graph import StateGraph, START, END
 from flask_jwt_extended import get_jwt_identity, create_access_token, jwt_required
@@ -53,7 +53,7 @@ class AskRoute(Resource):
             namespace=patient_id
         )
 
-        # oye, similarity_search_with_score is used which searches pinecone db and 
+        # similarity_search_with_score is used which searches pinecone db and 
         # find top 5 most relevant chunks based on embedding
         def retrieve(state):
             retrieved_docs = store.similarity_search_with_score(state["question"], k=5)
@@ -106,10 +106,10 @@ class AskRoute(Resource):
             if raw is None:
                 raw = response["message"]["content"]
 
-            # oye, this line just print the result on terminal
+            # this line just print the result on terminal
             print("\n=== RAW MODEL OUTPUT ===\n", raw, "\n=======================\n")
 
-            # oye this below code till the return block : parses llm-model output,
+            # this below code till the return block : parses llm-model output,
             # enable our XAI panel work consistently as it prevent pipeline crashes
             import json
             try:
@@ -131,7 +131,7 @@ class AskRoute(Resource):
                 "confidence": parsed.get("confidence", 0.0)
             }
 
-        # oye, it creates langraph pipeline
+        # it creates langraph pipeline
         graph_builder = StateGraph(dict)
 
         # Register nodes by name
@@ -149,7 +149,7 @@ class AskRoute(Resource):
         # RUN GRAPH WITH INITIAL STATE
         result = graph.invoke({"question": question})
 
-        # oye, it converts Pinecone chunks into a frontend-friendly structure
+        # it converts Pinecone chunks into a frontend-friendly structure
         evidence = []
         for doc, score in result["context"]:
             evidence.append({
